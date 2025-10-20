@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Identity;
@@ -22,7 +23,6 @@ app.UseAuthorization();
 
 // In-memory storage
 var todos = new List<TodoItem>();
-var nextId = 1;
 
 // Hardcoded credentials for the workshop
 const string Username = "admin";
@@ -54,35 +54,34 @@ app.MapPost("/login", (LoginRequest request) =>
 app.MapGet("/reset", () =>
 {
     todos.Clear();
-    nextId = 1;
     return Results.Ok(new { message = "All data cleared" });
 });
 
-// GET /todos - Get all todos
-app.MapGet("/todos", () => todos);
+// GET /api/todos - Get all todos
+app.MapGet("/api/todos", () => todos);
 
-// GET /todos/{id} - Get a specific todo
-app.MapGet("/todos/{id}", (int id) =>
+// GET /api/todos/{id} - Get a specific todo
+app.MapGet("/api/todos/{id}", (Guid id) =>
 {
     var todo = todos.FirstOrDefault(t => t.Id == id);
     return todo is not null ? Results.Ok(todo) : Results.NotFound();
 });
 
-// POST /todos - Create a new todo
-app.MapPost("/todos", (CreateTodoRequest request) =>
+// POST /api/todos - Create a new todo
+app.MapPost("/api/todos", (CreateTodoRequest request) =>
 {
     var todo = new TodoItem
     {
-        Id = nextId++,
+        Id = Guid.NewGuid(),
         Title = request.Title,
         IsComplete = false
     };
     todos.Add(todo);
-    return Results.Created($"/todos/{todo.Id}", todo);
+    return Results.Created($"/api/todos/{todo.Id}", todo);
 });
 
-// PUT /todos/{id} - Update a todo
-app.MapPut("/todos/{id}", (int id, UpdateTodoRequest request) =>
+// PUT /api/todos/{id} - Update a todo
+app.MapPut("/api/todos/{id}", (Guid id, UpdateTodoRequest request) =>
 {
     var todo = todos.FirstOrDefault(t => t.Id == id);
     if (todo is null)
@@ -93,8 +92,8 @@ app.MapPut("/todos/{id}", (int id, UpdateTodoRequest request) =>
     return Results.Ok(todo);
 });
 
-// DELETE /todos/{id} - Delete a todo (requires authentication)
-app.MapDelete("/todos/{id}", (int id) =>
+// DELETE /api/todos/{id} - Delete a todo (requires authentication)
+app.MapDelete("/api/todos/{id}", (Guid id) =>
 {
     var todo = todos.FirstOrDefault(t => t.Id == id);
     if (todo is null)
@@ -109,8 +108,10 @@ app.Run();
 // Models
 record TodoItem
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public required string Title { get; set; }
+
+    [JsonPropertyName("complete")]
     public bool IsComplete { get; set; }
 }
 
