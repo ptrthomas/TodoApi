@@ -57,7 +57,7 @@ Open your browser and go to:
 
 Or use curl from another terminal:
 ```bash
-curl http://localhost:5000/todos
+curl http://localhost:5000/api/todos
 ```
 
 ## Testing with Xplorer
@@ -67,9 +67,10 @@ A complete Postman collection is included for easy testing: [TodoApi.postman_col
 **To use it:**
 1. Download and install [Xplorer](https://xplorer.karatelabs.io/) - quick install for Windows/Mac/Linux
 2. Drag and drop the `TodoApi.postman_collection.json` file into Xplorer, or use the UI to open the collection
-3. The collection includes all 7 endpoints in order
-4. Run "1. Login" first - it automatically saves the bearer token
-5. Then try the other requests - "6. Delete Todo" will use the saved token automatically
+3. The collection includes all 7 endpoints in order with automated assertions
+4. Run "2. Create Todo" first - it automatically saves the UUID for subsequent requests
+5. Run "1. Login" to get a bearer token - it's automatically saved
+6. Then try the other requests - they use the saved UUID and bearer token automatically
 
 ## API Endpoints
 
@@ -80,37 +81,43 @@ Access Swagger UI at: `http://localhost:5000/swagger`
   { "username": "admin", "password": "password123" }
   ```
 - `GET /reset` - Clear all todos (helpful for workshop demos)
-- `GET /todos` - Get all todos
-- `GET /todos/{id}` - Get a specific todo
-- `POST /todos` - Create a new todo
+- `GET /api/todos` - Get all todos
+- `GET /api/todos/{id}` - Get a specific todo (id is a UUID)
+- `POST /api/todos` - Create a new todo
   ```json
   { "title": "Learn .NET" }
   ```
-- `PUT /todos/{id}` - Update a todo
+- `PUT /api/todos/{id}` - Update a todo (id is a UUID)
   ```json
   { "title": "Learn .NET", "isComplete": true }
   ```
-- `DELETE /todos/{id}` - Delete a todo (requires authentication)
+- `DELETE /api/todos/{id}` - Delete a todo (requires authentication, id is a UUID)
 
 ## Example Usage with curl
 
-**Note for Windows users**: Use PowerShell or install [Git Bash](https://git-scm.com/downloads) for these curl commands. Alternatively, use Postman (see above) or the Swagger UI.
+**Note for Windows users**: Use PowerShell or install [Git Bash](https://git-scm.com/downloads) for these curl commands. Alternatively, use Xplorer (see above) or the Swagger UI.
 
 ```bash
 # 1. Create a todo
-curl -X POST http://localhost:5000/todos \
+curl -X POST http://localhost:5000/api/todos \
   -H "Content-Type: application/json" \
   -d '{"title":"Learn REST APIs"}'
 
-# 2. Get all todos
-curl http://localhost:5000/todos
+# Response will include a UUID as the id
+# Example: {"id":"550e8400-e29b-41d4-a716-446655440000","title":"Learn REST APIs","complete":false}
 
-# 3. Update a todo (mark as complete)
-curl -X PUT http://localhost:5000/todos/1 \
+# 2. Get all todos
+curl http://localhost:5000/api/todos
+
+# 3. Get a specific todo by UUID (replace with your UUID from step 1)
+curl http://localhost:5000/api/todos/550e8400-e29b-41d4-a716-446655440000
+
+# 4. Update a todo (mark as complete - replace UUID with yours)
+curl -X PUT http://localhost:5000/api/todos/550e8400-e29b-41d4-a716-446655440000 \
   -H "Content-Type: application/json" \
   -d '{"title":"Learn REST APIs","isComplete":true}'
 
-# 4. Login to get bearer token (needed for delete)
+# 5. Login to get bearer token (needed for delete)
 curl -X POST http://localhost:5000/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"password123"}'
@@ -118,11 +125,11 @@ curl -X POST http://localhost:5000/login \
 # Response will contain an access_token - copy it!
 # Example: {"tokenType":"Bearer","accessToken":"CfDJ8...","expiresIn":3600}
 
-# 5. Delete a todo (requires authentication - replace YOUR_TOKEN with the access_token from step 4)
-curl -X DELETE http://localhost:5000/todos/1 \
+# 6. Delete a todo (requires authentication - replace YOUR_TOKEN and UUID)
+curl -X DELETE http://localhost:5000/api/todos/550e8400-e29b-41d4-a716-446655440000 \
   -H "Authorization: Bearer YOUR_TOKEN"
 
-# 6. Reset all data (helpful for starting fresh)
+# 7. Reset all data (helpful for starting fresh)
 curl http://localhost:5000/reset
 ```
 
@@ -156,3 +163,6 @@ The token is valid for 1 hour after login.
 - All data is stored in-memory and will be lost when the application stops
 - Credentials are hardcoded (`admin`/`password123`) for workshop simplicity
 - Only DELETE operations require authentication
+- Todo IDs are UUIDs (e.g., `550e8400-e29b-41d4-a716-446655440000`) instead of simple integers
+- The JSON response uses `"complete"` instead of `"isComplete"` for better REST API conventions
+- All todo endpoints use the `/api/todos` base path
